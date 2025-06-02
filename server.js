@@ -16,6 +16,10 @@ app.use(express.json({ limit: "20mb" }));
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+app.get('/ping', (req, res) => {
+  res.send('pong');
+});
+
 app.post("/mix", async (req, res) => {
   try {
     const { speechUrl, musicUrl } = req.body;
