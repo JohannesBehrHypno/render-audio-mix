@@ -6,7 +6,7 @@ const os = require("os");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { execFile } = require("child_process");
-const ffmpegPath = require("ffmpeg-static");
+const ffmpegPath = "ffmpeg"; // system binary
 const { createClient } = require("@supabase/supabase-js");
 
 require("dotenv").config();
