@@ -45,7 +45,7 @@ app.post("/mix", async (req, res) => {
         [
           "-i", speechPath,
           "-i", musicPath,
-          "-filter_complex", "[1:a]volume=0.3[a1];[0:a][a1]amix=inputs=2:duration=first",
+          "-filter_complex", "[0:a]adelay=7000|7000[s];[1:a]volume=0.15[m];[s][m]amix=inputs=2:duration=first",
           "-c:a", "libmp3lame",
           "-y", outputPath
         ],
