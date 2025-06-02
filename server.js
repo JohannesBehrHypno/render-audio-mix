@@ -55,8 +55,8 @@ app.post("/mix", async (req, res) => {
 
     const fileBuffer = fs.readFileSync(outputPath);
     const { data, error } = await supabase.storage
-      .from("audio-assets")
-      .upload(`mixed/${id}.mp3`, fileBuffer, {
+      .from("hypnosis-audio")
+      .upload(`/Rauchfrei_Hypnose_${id}.mp3`, fileBuffer, {
         contentType: "audio/mpeg",
         upsert: true,
       });
