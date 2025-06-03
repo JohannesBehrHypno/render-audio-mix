@@ -79,7 +79,7 @@ app.post("/mix", async (req, res) => {
     const { data: publicUrlData } = supabase
       .storage
       .from("hypnosis-audio")
-      .getPublicUrl(`/Rauchfrei_Hypnose${id}.mp3`);
+      .getPublicUrl(`/Rauchfrei_Hypnose_${id}.mp3`);
 
     res.json({ url: publicUrlData.publicUrl });
   } catch (err) {
