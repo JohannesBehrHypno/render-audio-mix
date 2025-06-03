@@ -16,10 +16,12 @@ app.use(express.json({ limit: "20mb" }));
 
 const cors = require('cors');
 app.use(cors({
-  origin: "https://remarkable-frangipane-54157d.netlify.app",
+  origin: ["https://remarkable-frangipane-54157d.netlify.app", "https://hypnize.com"],
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
+  allowedHeaders: ["Content-Type, Accept"]
 }));
+
+app.options('*', cors());
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
