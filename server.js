@@ -9,6 +9,9 @@ const { execFile } = require("child_process");
 const ffmpegPath = "ffmpeg"; // system binary
 const { createClient } = require("@supabase/supabase-js");
 
+const cors = require('cors');
+app.use(cors());
+
 require("dotenv").config();
 
 const app = express();
