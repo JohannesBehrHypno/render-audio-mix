@@ -9,13 +9,13 @@ const { execFile } = require("child_process");
 const ffmpegPath = "ffmpeg"; // system binary
 const { createClient } = require("@supabase/supabase-js");
 
-const cors = require('cors');
-app.use(cors());
-
 require("dotenv").config();
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
+
+const cors = require('cors');
+app.use(cors());
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
