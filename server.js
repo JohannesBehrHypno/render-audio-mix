@@ -15,7 +15,11 @@ const app = express();
 app.use(express.json({ limit: "20mb" }));
 
 const cors = require('cors');
-app.use(cors());
+app.use(cors({
+  origin: "https://remarkable-frangipane-54157d.netlify.app",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
