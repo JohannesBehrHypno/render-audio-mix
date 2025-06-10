@@ -8,6 +8,8 @@ const { v4: uuidv4 } = require("uuid");
 const { execFile } = require("child_process");
 const ffmpegPath = "ffmpeg"; // system binary
 const { createClient } = require("@supabase/supabase-js");
+const multer = require("multer");
+const upload = multer();
 
 require("dotenv").config();
 
@@ -66,6 +68,67 @@ app.post("/mix", async (req, res) => {
       );
     });
 
+    const fileBuffer = fs.readFileSync(outputPath);
+    const { data, error } = await supabase.storage
+      .from("hypnosis-audio")
+      .upload(`/Rauchfrei_Hypnose_${id}.mp3`, fileBuffer, {
+        contentType: "audio/mpeg",
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from("hypnosis-audio")
+      .getPublicUrl(`/Rauchfrei_Hypnose_${id}.mp3`);
+
+    res.json({ url: publicUrlData.publicUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/mix-blob", upload.single("speech"), async (req, res) => {
+  try {
+    const musicUrl = req.body.musicUrl;
+    const speechBuffer = req.file.buffer;
+
+    const id = uuidv4();
+    const tmpDir = os.tmpdir();
+    const speechPath = path.join(tmpDir, `${id}_speech.mp3`);
+    const musicPath = path.join(tmpDir, `${id}_music.mp3`);
+    const outputPath = path.join(tmpDir, `${id}_output.mp3`);
+
+    // Speichere Speech-Buffer lokal
+    fs.writeFileSync(speechPath, speechBuffer);
+
+    // Lade Musik wie gehabt herunter
+    const response = await fetch(musicUrl);
+    const fileStream = fs.createWriteStream(musicPath);
+    await new Promise((resolve, reject) => {
+      response.body.pipe(fileStream);
+      response.body.on("error", reject);
+      fileStream.on("finish", resolve);
+    });
+
+    // Führe ffmpeg aus
+    await new Promise((resolve, reject) => {
+      execFile(
+        ffmpegPath,
+        [
+          "-i", speechPath,
+          "-i", musicPath,
+          "-filter_complex", "[0:a]adelay=7000|7000[s];[1:a]volume=0.15[m];[s][m]amix=inputs=2:duration=first",
+          "-c:a", "libmp3lame",
+          "-y", outputPath
+        ],
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
+
+    // Hochladen zu Supabase
     const fileBuffer = fs.readFileSync(outputPath);
     const { data, error } = await supabase.storage
       .from("hypnosis-audio")
