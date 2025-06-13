@@ -20,7 +20,7 @@ const cors = require('cors');
 app.use(cors({
   origin: ["https://remarkable-frangipane-54157d.netlify.app", "https://hypnize.com"],
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type, Accept"]
+  allowedHeaders: ["Content-Type", "Accept"]
 }));
 
 app.options('*', cors());
