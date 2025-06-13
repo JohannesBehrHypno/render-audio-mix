@@ -144,6 +144,8 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
       .from("hypnosis-audio")
       .getPublicUrl(`/Rauchfrei_Hypnose_${id}.mp3`);
 
+    res.set('Access-Control-Allow-Origin', 'https://remarkable-frangipane-54157d.netlify.app');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
     res.json({ url: publicUrlData.publicUrl });
   } catch (err) {
     console.error(err);
