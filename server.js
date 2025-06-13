@@ -32,8 +32,9 @@ app.options("*", (req, res) => {
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-app.get('/ping', (req, res) => {
-  res.send('pong');
+app.get("/ping", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*"); // oder deine Domains explizit
+  res.status(200).send("pong");
 });
 
 app.post("/mix", async (req, res) => {
