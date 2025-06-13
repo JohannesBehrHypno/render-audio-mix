@@ -104,12 +104,17 @@ app.get("/download/:filename", async (req, res) => {
     .download(filename);
 
   if (error || !data) {
+    res.setHeader("Access-Control-Allow-Origin", "https://remarkable-frangipane-54157d.netlify.app");
+    res.set('Access-Control-Allow-Origin', 'https://hypnize.com');
     return res.status(500).json({ error: "Download fehlgeschlagen" });
   }
 
+  const buffer = await data.arrayBuffer();
+  res.setHeader("Access-Control-Allow-Origin", "https://remarkable-frangipane-54157d.netlify.app", 'https://hypnize.com');
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Content-Type", "audio/mpeg");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  data.pipe(res);
+  res.send(Buffer.from(buffer));
 });
 
 app.post("/mix-blob", upload.single("speech"), async (req, res) => {
@@ -167,7 +172,7 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
       .from("hypnosis-audio")
       .getPublicUrl(`/Rauchfrei_Hypnose_${id}.mp3`);
 
-    res.set('Access-Control-Allow-Origin', 'https://remarkable-frangipane-54157d.netlify.app');
+    res.set('Access-Control-Allow-Origin', 'https://remarkable-frangipane-54157d.netlify.app', 'https://hypnize.com');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
     res.json({ filename: filename });
   } catch (err) {
