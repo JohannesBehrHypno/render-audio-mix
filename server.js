@@ -23,7 +23,12 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Accept"]
 }));
 
-app.options('*', cors());
+app.options("*", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+  res.sendStatus(204);
+});
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -90,6 +95,23 @@ app.post("/mix", async (req, res) => {
   }
 });
 
+app.get("/download/:filename", async (req, res) => {
+  const { filename } = req.params;
+
+  const { data, error } = await supabase
+    .storage
+    .from("hypnosis-audio")
+    .download(filename);
+
+  if (error || !data) {
+    return res.status(500).json({ error: "Download fehlgeschlagen" });
+  }
+
+  res.setHeader("Content-Type", "audio/mpeg");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  data.pipe(res);
+});
+
 app.post("/mix-blob", upload.single("speech"), async (req, res) => {
   try {
     const musicUrl = req.body.musicUrl;
@@ -130,9 +152,10 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
 
     // Hochladen zu Supabase
     const fileBuffer = fs.readFileSync(outputPath);
+    const filename = `Rauchfrei_Hypnose_${id}.mp3`;
     const { data, error } = await supabase.storage
       .from("hypnosis-audio")
-      .upload(`/Rauchfrei_Hypnose_${id}.mp3`, fileBuffer, {
+      .upload(`/${filename}`, fileBuffer, {
         contentType: "audio/mpeg",
         upsert: true,
       });
@@ -146,8 +169,7 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
 
     res.set('Access-Control-Allow-Origin', 'https://remarkable-frangipane-54157d.netlify.app');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.set('Content-Disposition', 'attachment; filename="Rauchfrei_Hypnose.mp3"');
-    res.json({ url: publicUrlData.publicUrl });
+    res.json({ filename: filename });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
