@@ -175,7 +175,7 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
 
     res.set('Access-Control-Allow-Origin', 'https://remarkable-frangipane-54157d.netlify.app', 'https://hypnize.com');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.json({ filename: filename });
+    res.json({ filename: filename, url: publicUrlData?.publicUrl });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
