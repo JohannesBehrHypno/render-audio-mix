@@ -239,7 +239,7 @@ app.post("/send-access-email", async (req, res) => {
     await client.sendAsync({
       from: "Hypnize Support <support@hypnize.com>",
       to: purchase.email,
-      subject: "Deine Rauchfrei-Hypnose ist bereit",
+      subject: "Deine Rauchfrei-Hypnose ist bereit generiert zu werden",
       attachment: [{ data: html, alternative: true }],
     });
 
