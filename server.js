@@ -190,9 +190,65 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
   }
 });
 
+// In server.js hinzufügen
+const { SMTPClient } = require("emailjs"); // falls noch nicht installiert: npm install emailjs
+
+app.post("/send-access-email", async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ error: "Session ID fehlt" });
+
+    const { data: purchase, error } = await supabase
+      .from("purchases")
+      .select("*")
+      .eq("stripe_session_id", sessionId)
+      .eq("status", "completed")
+      .single();
+
+    if (error || !purchase) {
+      return res.status(404).json({ error: "Kein Kauf gefunden" });
+    }
+
+    const accessUrl = `https://hypnize.com/access/${purchase.access_token}`;
+
+    const client = new SMTPClient({
+      user: "support@hypnize.com",
+      password: process.env.ZOHO_SMTP_PASSWORD,
+      host: "smtp.zoho.eu",
+      ssl: false,
+      tls: true,
+      port: 587,
+    });
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb; text-align: center;">Der Link zu Deiner Hypnose ist bereit!</h1>
+        <p>Hallo,</p>
+        <p>vielen Dank für Deinen Kauf! Deine personalisierte Rauchfrei-Hypnose kann jetzt erstellt werden.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${accessUrl}" style="background: linear-gradient(to right, #16a34a, #2563eb); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            Zur Hypnose-Erstellung
+          </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">Falls der Button nicht funktioniert, kopiere diesen Link in Deinen Browser:<br><a href="${accessUrl}" style="color: #2563eb;">${accessUrl}</a></p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 12px; text-align: center;">Bei Fragen stehen wir Dir gerne zur Verfügung.</p>
+      </div>
+    `;
+
+    await client.sendAsync({
+      from: "Hypnize Support <support@hypnize.com>",
+      to: purchase.email,
+      subject: "Deine Rauchfrei-Hypnose ist bereit",
+      attachment: [{ data: html, alternative: true }],
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Fehler beim Senden der Mail:", err);
+    res.status(500).json({ error: "E-Mail-Versand fehlgeschlagen" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT);
-
-// .env.example
-// SUPABASE_URL=https://yourproject.supabase.co
-// SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
