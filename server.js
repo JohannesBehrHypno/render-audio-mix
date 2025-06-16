@@ -90,7 +90,7 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
         [
           "-i", speechPath,
           "-i", musicPath,
-          "-filter_complex", "[0:a]adelay=7000|7000[s];[1:a]volume=0.15[m];[s][m]amix=inputs=2:duration=first",
+          "-filter_complex", "[0:a]adelay=7000|7000[s];[1:a]volume=0.15[m];[s][m]amix=inputs=2:duration=longest",
           "-c:a", "libmp3lame",
           "-y", outputPath
         ],
