@@ -87,7 +87,7 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
 
     console.log("📦 Speech-File size:", fs.statSync(speechPath).size);
     console.log("🎵 Music-File size:", fs.statSync(musicPath).size);
-    
+
     const header = fs.readFileSync(musicPath, { encoding: "utf-8", flag: "r" }).slice(0, 100);
     console.log("📄 File head:", header);
 
@@ -306,9 +306,10 @@ app.post("/send-success-email", async (req, res) => {
 
 app.post("/mix-urls", async (req, res) => {
   try {
-    const { speechUrl, musicUrl, filename } = req.body;
-    if (!speechUrl || !musicUrl) {
-      return res.status(400).json({ error: "speechUrl und musicUrl sind erforderlich" });
+    const { speechFilename, musicFilename, finalFilename } = req.body;
+
+    if (!speechFilename || !musicFilename) {
+      return res.status(400).json({ error: "speechFilename und musicFilename sind erforderlich" });
     }
 
     const id = uuidv4();
@@ -317,29 +318,29 @@ app.post("/mix-urls", async (req, res) => {
     const musicPath = path.join(tmpDir, `${id}_music.mp3`);
     const outputPath = path.join(tmpDir, `${id}_output.mp3`);
 
-    // Lade Speech
-    const speechResponse = await fetch(speechUrl);
-    const speechStream = fs.createWriteStream(speechPath);
-    await new Promise((resolve, reject) => {
-      speechResponse.body.pipe(speechStream);
-      speechResponse.body.on("error", reject);
-      speechStream.on("finish", resolve);
-    });
+    // 🎙 Speech herunterladen
+    const { data: speechFile, error: speechError } = await supabase
+      .storage
+      .from("hypnosis-audio")
+      .download(speechFilename);
 
-console.log("🔊 Downloading music from:", musicUrl)
+    if (speechError || !speechFile) throw speechError || new Error("Fehler beim Laden der Speech-Datei");
 
-    // Lade Musik
-    const musicResponse = await fetch(musicUrl);
-    const musicStream = fs.createWriteStream(musicPath);
-    await new Promise((resolve, reject) => {
-      musicResponse.body.pipe(musicStream);
-      musicResponse.body.on("error", reject);
-      musicStream.on("finish", resolve);
-    });
+    const speechBuffer = Buffer.from(await speechFile.arrayBuffer());
+    fs.writeFileSync(speechPath, speechBuffer);
 
-console.log("💾 Saved music to:", musicPath)
+    // 🎵 Musik herunterladen
+    const { data: musicFile, error: musicError } = await supabase
+      .storage
+      .from("audio-assets")
+      .download(musicFilename);
 
-    // Mixen
+    if (musicError || !musicFile) throw musicError || new Error("Fehler beim Laden der Musik-Datei");
+
+    const musicBuffer = Buffer.from(await musicFile.arrayBuffer());
+    fs.writeFileSync(musicPath, musicBuffer);
+
+    // 🧪 Mixing
     await new Promise((resolve, reject) => {
       execFile(
         ffmpegPath,
@@ -354,13 +355,12 @@ console.log("💾 Saved music to:", musicPath)
       );
     });
 
-    // Upload zu Supabase
-    const fileBuffer = fs.readFileSync(outputPath);
-    const finalFilename = filename || `Rauchfrei_Hypnose_${id}.mp3`;
+    const mixedBuffer = fs.readFileSync(outputPath);
+    const uploadedFilename = finalFilename || `Rauchfrei_Hypnose_${id}.mp3`;
 
     const { error: uploadError } = await supabase.storage
       .from("hypnosis-audio")
-      .upload(finalFilename, fileBuffer, {
+      .upload(uploadedFilename, mixedBuffer, {
         contentType: "audio/mpeg",
         upsert: true,
       });
@@ -370,12 +370,13 @@ console.log("💾 Saved music to:", musicPath)
     const { data: publicUrlData } = supabase
       .storage
       .from("hypnosis-audio")
-      .getPublicUrl(finalFilename);
+      .getPublicUrl(uploadedFilename);
 
-    res.json({ filename: finalFilename, url: publicUrlData?.publicUrl });
+    res.json({ filename: uploadedFilename, url: publicUrlData?.publicUrl });
+
   } catch (err) {
-    console.error("Mixing über URLs fehlgeschlagen:", err);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Fehler beim Mixing:", err);
+    res.status(500).json({ error: err.message || "Unbekannter Fehler" });
   }
 });
 
