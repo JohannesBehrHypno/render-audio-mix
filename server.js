@@ -41,7 +41,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 app.get("/ping", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*"); // oder deine Domains explizit
-  res.status(200).send("pong");
+  res.status(200).send("ready");
 });
 
 app.get("/download/:filename", async (req, res) => {
