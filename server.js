@@ -123,6 +123,62 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
   }
 });
 
+app.post("/mix-blobs", upload.fields([{ name: "speech" }, { name: "music" }]), async (req, res) => {
+  try {
+    const speechBuffer = req.files.speech?.[0]?.buffer;
+    const musicBuffer = req.files.music?.[0]?.buffer;
+
+    if (!speechBuffer || !musicBuffer) {
+      return res.status(400).json({ error: "Beide Dateien (speech, music) müssen gesendet werden." });
+    }
+
+    const id = uuidv4();
+    const tmpDir = os.tmpdir();
+    const speechPath = path.join(tmpDir, `${id}_speech.mp3`);
+    const musicPath = path.join(tmpDir, `${id}_music.mp3`);
+    const outputPath = path.join(tmpDir, `${id}_output.mp3`);
+
+    fs.writeFileSync(speechPath, speechBuffer);
+    fs.writeFileSync(musicPath, musicBuffer);
+
+    await new Promise((resolve, reject) => {
+      execFile(
+        ffmpegPath,
+        [
+          "-i", speechPath,
+          "-i", musicPath,
+          "-filter_complex", "[0:a]adelay=7000|7000[s];[1:a]volume=0.15[m];[s][m]amix=inputs=2:duration=longest",
+          "-c:a", "libmp3lame",
+          "-y", outputPath
+        ],
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
+
+    const fileBuffer = fs.readFileSync(outputPath);
+    const filename = `Rauchfrei_Hypnose_${id}.mp3`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("hypnosis-audio")
+      .upload(filename, fileBuffer, {
+        contentType: "audio/mpeg",
+        upsert: true,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from("hypnosis-audio")
+      .getPublicUrl(filename);
+
+    res.json({ filename, url: publicUrlData?.publicUrl });
+  } catch (err) {
+    console.error("Mixing über Blobs fehlgeschlagen:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // In server.js hinzufügen
 const { SMTPClient } = require("emailjs"); // falls noch nicht installiert: npm install emailjs
 
