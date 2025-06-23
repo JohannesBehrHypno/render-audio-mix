@@ -262,6 +262,8 @@ app.post("/mix-urls", async (req, res) => {
       speechStream.on("finish", resolve);
     });
 
+console.log("🔊 Downloading music from:", musicUrl)
+
     // Lade Musik
     const musicResponse = await fetch(musicUrl);
     const musicStream = fs.createWriteStream(musicPath);
@@ -270,6 +272,8 @@ app.post("/mix-urls", async (req, res) => {
       musicResponse.body.on("error", reject);
       musicStream.on("finish", resolve);
     });
+
+console.log("💾 Saved music to:", musicPath)
 
     // Mixen
     await new Promise((resolve, reject) => {
