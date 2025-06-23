@@ -118,7 +118,21 @@ const sendSuccessEmail = async (accessToken) => {
     timeout: 10000
   });
 
-  const html = `...`; // Dein HTML-String wie gehabt
+  const html = `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #16a34a; text-align: center;">Deine Hypnose ist fertig!</h1>
+    <p>Hallo,</p>
+    <p>Deine personalisierte Hypnose wurde erfolgreich erstellt. Du kannst sie jetzt anhören oder herunterladen:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${accessUrl}" style="background: linear-gradient(to right, #16a34a, #2563eb); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+        Hypnose anhören
+      </a>
+    </div>
+    <p style="color: #666; font-size: 14px;">Falls der Button nicht funktioniert, kopiere diesen Link in Deinen Browser:<br><a href="${accessUrl}" style="color: #2563eb;">${accessUrl}</a></p>
+    <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+    <p style="color: #666; font-size: 12px; text-align: center;">Bei Fragen stehen wir Dir gerne zur Verfügung.</p>
+  </div>
+`;
 
   await client.sendAsync({
     from: "Hypnize Support <support@hypnize.com>",
