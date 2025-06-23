@@ -96,6 +96,38 @@ async function mixFromStorage({ speechFilename, musicFilename, finalFilename }) 
   return { filename: uploadedFilename, url: publicUrlData?.publicUrl };
 }
 
+const sendSuccessEmail = async (accessToken) => {
+  const { data: purchase, error } = await supabase
+    .from("purchases")
+    .select("*")
+    .eq("access_token", accessToken)
+    .eq("status", "completed")
+    .single();
+
+  if (error || !purchase) throw new Error("Kein Kauf gefunden");
+
+  const accessUrl = `https://hypnize.com/access/${purchase.access_token}`;
+
+  const client = new SMTPClient({
+    user: "support@hypnize.com",
+    password: process.env.ZOHO_SMTP_PASSWORD,
+    host: "smtp.zoho.eu",
+    ssl: false,
+    tls: true,
+    port: 587,
+    timeout: 10000
+  });
+
+  const html = `...`; // Dein HTML-String wie gehabt
+
+  await client.sendAsync({
+    from: "Hypnize Support <support@hypnize.com>",
+    to: purchase.email,
+    subject: "Deine personalisierte Hypnose ist fertig!",
+    attachment: [{ data: html, alternative: true }],
+  });
+};
+
 app.get("/ping", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*"); // oder deine Domains explizit
   res.status(200).send("ready");
@@ -309,50 +341,7 @@ app.post("/send-success-email", async (req, res) => {
     const { accessToken } = req.body;
     if (!accessToken) return res.status(400).json({ error: "Access Token fehlt" });
 
-    const { data: purchase, error } = await supabase
-      .from("purchases")
-      .select("*")
-      .eq("access_token", accessToken)
-      .eq("status", "completed")
-      .single();
-
-    if (error || !purchase) {
-      return res.status(404).json({ error: "Kein Kauf gefunden" });
-    }
-
-    const accessUrl = `https://hypnize.com/access/${purchase.access_token}`;
-
-    const client = new SMTPClient({
-      user: "support@hypnize.com",
-      password: process.env.ZOHO_SMTP_PASSWORD,
-      host: "smtp.zoho.eu",
-      ssl: false,
-      tls: true,
-      port: 587,
-    });
-
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #16a34a; text-align: center;">Deine Hypnose ist fertig!</h1>
-        <p>Hallo,</p>
-        <p>Deine personalisierte Hypnose wurde erfolgreich erstellt. Du kannst sie jetzt anhören oder herunterladen:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${accessUrl}" style="background: linear-gradient(to right, #16a34a, #2563eb); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-            Hypnose anhören
-          </a>
-        </div>
-        <p style="color: #666; font-size: 14px;">Falls der Button nicht funktioniert, kopiere diesen Link in Deinen Browser:<br><a href="${accessUrl}" style="color: #2563eb;">${accessUrl}</a></p>
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        <p style="color: #666; font-size: 12px; text-align: center;">Bei Fragen stehen wir Dir gerne zur Verfügung.</p>
-      </div>
-    `;
-
-    await client.sendAsync({
-      from: "Hypnize Support <support@hypnize.com>",
-      to: purchase.email,
-      subject: "Deine personalisierte Hypnose ist fertig!",
-      attachment: [{ data: html, alternative: true }],
-    });
+    await sendSuccessEmail(accessToken);
 
     res.json({ success: true });
   } catch (err) {
@@ -382,13 +371,10 @@ app.post("/mix-and-complete", async (req, res) => {
       mp3_file_url: finalMixUrl
     });
 
-    await fetch("http://localhost:" + PORT + "/send-success-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: token })
-    });
-
     res.json({ success: true, url: finalMixUrl });
+
+    sendSuccessEmail(token) // ohne await
+      .catch(err => console.error("Mail-Fehler (asynchron):", err));
   } catch (err) {
     console.error("❌ Fehler in /mix-and-complete:", err);
     await supabase.rpc("mark_generation_failed", { token: req.body?.token });
