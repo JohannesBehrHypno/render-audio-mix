@@ -74,9 +74,6 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
     // Speichere Speech-Buffer lokal
     fs.writeFileSync(speechPath, speechBuffer);
 
-    console.log("📦 Speech-File size:", fs.statSync(speechPath).size);
-    console.log("🎵 Music-File size:", fs.statSync(musicPath).size);
-
     // Lade Musik wie gehabt herunter
     const response = await fetch(musicUrl);
     console.log(response);
@@ -87,6 +84,10 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
       fileStream.on("finish", resolve);
     });
 
+
+    console.log("📦 Speech-File size:", fs.statSync(speechPath).size);
+    console.log("🎵 Music-File size:", fs.statSync(musicPath).size);
+    
     const header = fs.readFileSync(musicPath, { encoding: "utf-8", flag: "r" }).slice(0, 100);
     console.log("📄 File head:", header);
 
