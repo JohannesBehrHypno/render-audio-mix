@@ -71,9 +71,6 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
     const musicPath = path.join(tmpDir, `${id}_music.mp3`);
     const outputPath = path.join(tmpDir, `${id}_output.mp3`);
 
-    const header = fs.readFileSync(musicPath, { encoding: "utf-8", flag: "r" }).slice(0, 100);
-    console.log("📄 File head:", header);
-
     // Speichere Speech-Buffer lokal
     fs.writeFileSync(speechPath, speechBuffer);
 
@@ -89,6 +86,9 @@ app.post("/mix-blob", upload.single("speech"), async (req, res) => {
       response.body.on("error", reject);
       fileStream.on("finish", resolve);
     });
+
+    const header = fs.readFileSync(musicPath, { encoding: "utf-8", flag: "r" }).slice(0, 100);
+    console.log("📄 File head:", header);
 
     // Führe ffmpeg aus
     await new Promise((resolve, reject) => {
